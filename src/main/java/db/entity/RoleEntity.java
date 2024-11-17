@@ -17,4 +17,5 @@ public class RoleEntity {
     public RoleEntity(Roles role) {
         this.role = role;
     }
+
 }

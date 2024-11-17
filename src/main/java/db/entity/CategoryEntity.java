@@ -13,4 +13,5 @@ public class CategoryEntity {
 
     private Integer id;
     private String category;
+
 }

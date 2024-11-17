@@ -79,7 +79,6 @@ public class DaoRunner {
         // поиск с использованием фильтра по пользователю
         var userFilter = new PortalUserFilter(2, 0, "Alex", "Brown", "alexbrown", "alexbrown@example.com");
         System.out.println(portalUserDao.findAll(userFilter));
-
     }
 
 }

@@ -6,6 +6,4 @@ public class DaoException extends RuntimeException {
         super(throwable);
     }
 
-
-
 }

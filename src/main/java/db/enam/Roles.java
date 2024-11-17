@@ -5,5 +5,4 @@ public enum Roles {
     MODERATOR,
     USER,
     GUEST
-
 }
