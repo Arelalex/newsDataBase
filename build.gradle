@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+group = 'com.dmdev' // Замените на подходящее имя группы
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Пример зависимости (например, Lombok)
+    implementation 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    implementation 'org.postgresql:postgresql:42.5.0'
+    // Добавьте другие зависимости по мере необходимости
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
