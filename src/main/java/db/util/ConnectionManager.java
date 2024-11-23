@@ -19,7 +19,6 @@ public final class ConnectionManager {
     private static BlockingQueue<Connection> pool;
     private static List<Connection> sourceConnections;
 
-
     static {
         loadDriver();
         initConnectionPool();

@@ -144,3 +144,18 @@ ALTER TABLE news
 ALTER TABLE news
     ADD CONSTRAINT fk_role FOREIGN KEY (status_id) REFERENCES status(id),
     ALTER COLUMN status_id SET NOT NULL;
+
+    SELECT id
+    FROM role
+    WHERE role = role.role;
+
+    SELECT u.id,
+           u.first_name,
+           u.last_name,
+           u.nickname,
+           u.email,
+           r.role
+    FROM portal_user u
+    LEFT JOIN role r
+    ON u.role_id = r.id
+    WHERE u.id = 1;

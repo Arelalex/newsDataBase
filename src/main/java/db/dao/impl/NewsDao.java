@@ -251,4 +251,5 @@ public class NewsDao implements Dao<Long, NewsEntity> {
                         resultSet.getStatement().getConnection()).orElse(null)
         );
     }
+
 }

@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class StatusEntity {
     private Integer id;
     private String status;
+
 }

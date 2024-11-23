@@ -6,4 +6,5 @@ public record PortalUserFilter(int limit,
                                String lastName,
                                String nickname,
                                String email) {
+
 }

@@ -21,4 +21,5 @@ public class CommentEntity {
     private NewsEntity news;
     private PortalUserEntity user;
     private StatusEntity status;
+
 }
