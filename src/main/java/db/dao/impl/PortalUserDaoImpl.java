@@ -1,11 +1,11 @@
 package db.dao.impl;
 
-import db.dao.Dao;
+import db.dao.PortalUserDao;
 import db.dto.PortalUserFilter;
-import db.enam.Roles;
+import db.enums.Roles;
 import db.entity.PortalUserEntity;
 import db.entity.RoleEntity;
-import db.exception.DaoException;
+import db.exception.*;
 import db.util.ConnectionManager;
 
 import java.sql.Connection;
@@ -18,7 +18,18 @@ import java.util.Optional;
 
 import static java.util.stream.Collectors.joining;
 
-public class PortalUserDao implements Dao<Integer, PortalUserEntity> {
+public class PortalUserDaoImpl implements PortalUserDao<Integer, PortalUserEntity> {
+
+    private static final String PORTAL_USER_ID = "id";
+    private static final String USER_FIRST_NAME = "first_name";
+    private static final String USER_LAST_NAME = "last_name";
+    private static final String NICKNAME = "nickname";
+    private static final String USER_EMAIL = "email";
+    private static final String USER_PASSWORD = "password";
+    private static final String IMAGE = "image";
+    private static final String FOREIGN_ROLE_ID = "role_id";
+
+    private static final String ROLE_ROLE = "role";
 
     private static final String DELETE_SQL = """
             DELETE FROM portal_user
@@ -61,14 +72,18 @@ public class PortalUserDao implements Dao<Integer, PortalUserEntity> {
             WHERE u.id = ?
             """;
 
-    private static final PortalUserDao INSTANCE = new PortalUserDao();
-    private final RoleDao roleDao = RoleDao.getInstance();
+    private static PortalUserDaoImpl instance;
+    private final RoleDaoImpl roleDaoImpl;
 
-    private PortalUserDao() {
+    private PortalUserDaoImpl() {
+        roleDaoImpl = RoleDaoImpl.getInstance();
     }
 
-    public static PortalUserDao getInstance() { // все сервисы которые будут работать с DAO будут вызыват его через гетИнстанс
-        return INSTANCE;
+    public static synchronized PortalUserDaoImpl getInstance() { // все сервисы которые будут работать с DAO будут вызыват его через гетИнстанс
+        if (instance == null) {
+            instance = new PortalUserDaoImpl();
+        }
+        return instance;
     }
 
     @Override
@@ -79,7 +94,7 @@ public class PortalUserDao implements Dao<Integer, PortalUserEntity> {
 
             return preparedStatement.executeUpdate() > 0;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionDelete("Error deleting values from table",throwables);
         }
     }
 
@@ -103,7 +118,7 @@ public class PortalUserDao implements Dao<Integer, PortalUserEntity> {
             }
             return portalUser;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionInsert("Error inserting values into table", throwables);
         }
     }
 
@@ -123,7 +138,7 @@ public class PortalUserDao implements Dao<Integer, PortalUserEntity> {
 
             preparedStatement.executeUpdate();
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionUpdate("Error updating values in table", throwables);
         }
     }
 
@@ -132,7 +147,7 @@ public class PortalUserDao implements Dao<Integer, PortalUserEntity> {
         try (var connection = ConnectionManager.get()) {
             return findById(id, connection);
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
@@ -149,32 +164,32 @@ public class PortalUserDao implements Dao<Integer, PortalUserEntity> {
             }
             return Optional.ofNullable(portalUser);
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
 
-    public List<PortalUserEntity> findAll(PortalUserFilter filter) {
+    public List<PortalUserEntity> findAllByFilter(PortalUserFilter filter) {
         List<Object> parameters = new ArrayList<>();
         List<String> whereSql = new ArrayList<>();
-        if (filter.firstName() != null) {
+        if (filter.getFirstName() != null) {
             whereSql.add("first_name LIKE ?");
-            parameters.add("%" + filter.firstName() + "%");
+            parameters.add("%" + filter.getFirstName() + "%");
         }
-        if (filter.lastName() != null) {
+        if (filter.getLastName() != null) {
             whereSql.add("last_name = ?");
-            parameters.add("%" + filter.lastName() + "%");
+            parameters.add("%" + filter.getLastName() + "%");
         }
-        if (filter.nickname() != null) {
+        if (filter.getNickname() != null) {
             whereSql.add("nickname = ?");
-            parameters.add("%" + filter.nickname() + "%");
+            parameters.add("%" + filter.getNickname() + "%");
         }
-        if (filter.email() != null) {
+        if (filter.getEmail() != null) {
             whereSql.add("email = ?");
-            parameters.add("%" + filter.email() + "%");
+            parameters.add("%" + filter.getEmail() + "%");
         }
-        parameters.add(filter.limit());
-        parameters.add(filter.offset());
+        parameters.add(filter.getLimit());
+        parameters.add(filter.getOffset());
         var where = whereSql.stream()
                 .collect(joining(" AND ", " WHERE ", " LIMIT ? OFFSET ? "));
 
@@ -193,7 +208,7 @@ public class PortalUserDao implements Dao<Integer, PortalUserEntity> {
             }
             return portalUsers;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindAll("Error searching for values in table", throwables);
         }
     }
 
@@ -208,25 +223,25 @@ public class PortalUserDao implements Dao<Integer, PortalUserEntity> {
             }
             return tickets;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindAll("Error searching for values in table", throwables);
         }
     }
 
     private PortalUserEntity buildUser(ResultSet resultSet) throws SQLException {
         var roleEntity = new RoleEntity(
-                resultSet.getInt("id"),
-                Roles.valueOf(resultSet.getString("role"))
+                resultSet.getInt(FOREIGN_ROLE_ID),
+                Roles.valueOf(resultSet.getString(ROLE_ROLE))
         );
 
         return new PortalUserEntity(
-                resultSet.getInt("id"),
-                resultSet.getString("first_name"),
-                resultSet.getString("last_name"),
-                resultSet.getString("nickname"),
-                resultSet.getString("email"),
-                resultSet.getString("password"),
-                resultSet.getString("image"),
-                roleDao.findById(resultSet.getInt("role_id"),
+                resultSet.getInt(PORTAL_USER_ID),
+                resultSet.getString(USER_FIRST_NAME),
+                resultSet.getString(USER_LAST_NAME),
+                resultSet.getString(NICKNAME),
+                resultSet.getString(USER_EMAIL),
+                resultSet.getString(USER_PASSWORD),
+                resultSet.getString(IMAGE),
+                roleDaoImpl.findById(resultSet.getInt(FOREIGN_ROLE_ID),
                         resultSet.getStatement().getConnection()).orElse(null)
         );
     }

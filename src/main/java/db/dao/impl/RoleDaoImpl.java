@@ -1,10 +1,10 @@
 package db.dao.impl;
 
-import db.dao.Dao;
+import db.dao.RoleDao;
 import db.dto.RoleFilter;
-import db.enam.Roles;
+import db.enums.Roles;
 import db.entity.RoleEntity;
-import db.exception.DaoException;
+import db.exception.*;
 import db.util.ConnectionManager;
 
 import java.sql.Connection;
@@ -16,7 +16,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class RoleDao implements Dao<Integer, RoleEntity> {
+public class RoleDaoImpl implements RoleDao<Integer, RoleEntity> {
+
+    private static final String FOREIGN_ROLE_ID = "id";
+    private static final String ROLE_ROLE = "role";
 
     private static final String DELETE_SQL = """
             DELETE FROM role
@@ -50,15 +53,18 @@ public class RoleDao implements Dao<Integer, RoleEntity> {
             WHERE role.role = ?
             """;
 
-    private static RoleDao INSTANCE = new RoleDao();
-    private final PortalUserDao portalUserDao = PortalUserDao.getInstance();
-    private final RoleDao roleDao = RoleDao.getInstance();
+    private static RoleDaoImpl instance;
+    private final PortalUserDaoImpl portalUserDaoImpl = PortalUserDaoImpl.getInstance();
+    private final RoleDaoImpl roleDaoImpl = RoleDaoImpl.getInstance();
 
-    private RoleDao() {
+    private RoleDaoImpl() {
     }
 
-    public static RoleDao getInstance() {
-        return INSTANCE;
+    public static synchronized RoleDaoImpl getInstance() {
+        if (instance == null) {
+            instance = new RoleDaoImpl();
+        }
+        return instance;
     }
 
     @Override
@@ -69,7 +75,7 @@ public class RoleDao implements Dao<Integer, RoleEntity> {
 
             return preparedStatement.executeUpdate() > 0;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionDelete("Error deleting values from table",throwables);
         }
     }
 
@@ -87,7 +93,7 @@ public class RoleDao implements Dao<Integer, RoleEntity> {
             }
             return roleEntity;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionInsert("Error inserting values into table", throwables);
         }
     }
 
@@ -101,7 +107,7 @@ public class RoleDao implements Dao<Integer, RoleEntity> {
 
             preparedStatement.executeUpdate();
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionUpdate("Error updating values in table", throwables);
         }
     }
 
@@ -111,7 +117,7 @@ public class RoleDao implements Dao<Integer, RoleEntity> {
 
             return findById(id, connection);
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
@@ -126,7 +132,7 @@ public class RoleDao implements Dao<Integer, RoleEntity> {
             }
             return Optional.ofNullable(role);
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
@@ -141,11 +147,11 @@ public class RoleDao implements Dao<Integer, RoleEntity> {
             }
             return Optional.ofNullable(roleEmpty);
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindAll("Error searching for values in table", throwables);
         }
     }
 
-    public List<RoleEntity> findAll(RoleFilter filter) {
+    public List<RoleEntity> findAllByFilter(RoleFilter filter) {
         List<Object> parameters = new ArrayList<>();
         List<String> whereSql = new ArrayList<>();
         if (filter.role() != null) {
@@ -174,14 +180,14 @@ public class RoleDao implements Dao<Integer, RoleEntity> {
             }
             return roleList;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindAll("Error searching for values in table", throwables);
         }
     }
 
     private RoleEntity buildRole(ResultSet resultSet) throws SQLException {
         return new RoleEntity(
-                resultSet.getInt("id"),
-                Roles.valueOf(resultSet.getString("role"))
+                resultSet.getInt(FOREIGN_ROLE_ID),
+                Roles.valueOf(resultSet.getString(ROLE_ROLE))
         );
     }
 
@@ -196,7 +202,7 @@ public class RoleDao implements Dao<Integer, RoleEntity> {
             }
             return roles;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindAll("Error searching for values in table", throwables);
         }
     }
 }

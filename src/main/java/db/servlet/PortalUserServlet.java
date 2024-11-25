@@ -1,7 +1,11 @@
 package db.servlet;
 
-import db.dao.impl.PortalUserDao;
+import db.dao.PortalUserDao;
+import db.dao.impl.PortalUserDaoImpl;
+import db.dto.PortalUserFilter;
 import db.entity.PortalUserEntity;
+import db.service.PortalUserService;
+import db.service.impl.PortalUserServiceImpl;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -15,41 +19,38 @@ import java.util.List;
 @WebServlet(name = "PortalUser", urlPatterns = "/users")
 public class PortalUserServlet extends HttpServlet {
 
-    private PortalUserDao portalUserDao;
+    private final PortalUserDaoImpl portalUserDao = PortalUserDaoImpl.getInstance();
+    private final PortalUserService portalUserService = PortalUserServiceImpl.getInstance();
 
+    @Override
     public void init(ServletConfig config) throws ServletException {
-        portalUserDao = PortalUserDao.getInstance();
+        super.init(config);
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setContentType("text/html");
         String id = req.getParameter("id");
+        resp.setContentType("text/html");
 
-        try (var writer = resp.getWriter()) {
+        try {
             if (id != null) {
-                int user_id = Integer.parseInt(id);
-                PortalUserEntity portalUser = portalUserDao.findById(user_id).orElse(null);
-
-                if (portalUser != null) {
-                    writer.write("<h1>User Details</h1>");
-                    writer.write("<p>ID: " + portalUser.getId() + "</p>");
-                    writer.write("<p>Name: " + portalUser.getFirstName() + "</p>");
-                    writer.write("<p>Email: " + portalUser.getLastName() + "</p>");
-                } else {
-                    writer.write("<h1>User not found</h1>");
-                }
+                int userId = Integer.parseInt(id);
+                PortalUserFilter user = portalUserService.findById(userId);
+                resp.getWriter().write("<h1>User Details</h1>");
+                resp.getWriter().write("<p>ID: " + user.getId() + "</p>");
+                resp.getWriter().write("<p>Name: " + user.getFirstName() + "</p>");
+                resp.getWriter().write("<p>Email: " + user.getEmail() + "</p>");
             } else {
-                List<PortalUserEntity> users = portalUserDao.findAll();
-                writer.write("<h1>All Users</h1>");
-                writer.write("<ul>");
-                for (PortalUserEntity user : users) {
-                    writer.write("<li>" + user.getFirstName() + " " + user.getLastName() + "</li>");
+                List<PortalUserFilter> users = portalUserService.findAll();
+                resp.getWriter().write("<h1>All Users</h1>");
+                resp.getWriter().write("<ul>");
+                for (PortalUserFilter user : users) {
+                    resp.getWriter().write("<li>" + user.getFirstName() + " " + user.getLastName() + "</li>");
                 }
-                writer.write("</ul>");
+                resp.getWriter().write("</ul>");
             }
-        } catch (NumberFormatException e) {
-            resp.getWriter().write("<h1>Invalid ID format</h1>");
+        } catch (Exception e) {
+            resp.getWriter().write("<h1>Error: " + e.getMessage() + "</h1>");
         }
     }
 

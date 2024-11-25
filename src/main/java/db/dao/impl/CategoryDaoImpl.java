@@ -1,9 +1,9 @@
 package db.dao.impl;
 
-import db.dao.Dao;
+import db.dao.CategoryDao;
 import db.dto.CategoryFilter;
 import db.entity.CategoryEntity;
-import db.exception.DaoException;
+import db.exception.*;
 import db.util.ConnectionManager;
 
 import java.sql.Connection;
@@ -16,9 +16,11 @@ import java.util.Optional;
 
 import static java.util.stream.Collectors.joining;
 
-public class CategoryDao implements Dao<Integer, CategoryEntity> {
+public class CategoryDaoImpl implements CategoryDao<Integer, CategoryEntity> {
 
-    private static final CategoryDao INSTANCE = new CategoryDao();
+    private static CategoryDaoImpl instance;
+    private static final String CATEGORY_ID = "id";
+    private static final String CATEGORY_CATEGORY = "category";
 
     private static final String DELETE_SQL = """
             DELETE FROM category
@@ -46,11 +48,14 @@ public class CategoryDao implements Dao<Integer, CategoryEntity> {
             WHERE category.id = ?
             """;
 
-    private CategoryDao() {
+    private CategoryDaoImpl() {
     }
 
-    public static CategoryDao getInstance() {
-        return INSTANCE;
+    public static synchronized CategoryDaoImpl getInstance() {
+        if (instance == null) {
+            instance = new CategoryDaoImpl();
+        }
+        return instance;
     }
 
     @Override
@@ -61,7 +66,7 @@ public class CategoryDao implements Dao<Integer, CategoryEntity> {
 
             return preparedStatement.executeUpdate() > 0;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionDelete("Error deleting values from table",throwables);
         }
     }
 
@@ -79,7 +84,7 @@ public class CategoryDao implements Dao<Integer, CategoryEntity> {
             }
             return categoryEntity;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionInsert("Error inserting values into table", throwables);
         }
     }
 
@@ -92,7 +97,7 @@ public class CategoryDao implements Dao<Integer, CategoryEntity> {
 
             preparedStatement.executeUpdate();
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionUpdate("Error updating values in table", throwables);
         }
     }
 
@@ -101,7 +106,7 @@ public class CategoryDao implements Dao<Integer, CategoryEntity> {
         try (var connection = ConnectionManager.get()) {
             return findById(id, connection);
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
@@ -117,11 +122,11 @@ public class CategoryDao implements Dao<Integer, CategoryEntity> {
 
             return Optional.ofNullable(categoryEntity);
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
-    public List<CategoryEntity> findAll(CategoryFilter filter) {
+    public List<CategoryEntity> findAllByFilter(CategoryFilter filter) {
         List<Object> parameters = new ArrayList<>();
         List<String> whereSql = new ArrayList<>();
         if (filter.category() != null) {
@@ -148,7 +153,7 @@ public class CategoryDao implements Dao<Integer, CategoryEntity> {
             }
             return categoryEntities;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindAll("Error searching for values in table", throwables);
         }
     }
 
@@ -163,14 +168,14 @@ public class CategoryDao implements Dao<Integer, CategoryEntity> {
             }
             return categoryEntities;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindAll("Error searching for values in table", throwables);
         }
     }
 
     private CategoryEntity buildCategory(ResultSet resultSet) throws SQLException {
         return new CategoryEntity(
-                resultSet.getInt("id"),
-                resultSet.getString("category")
+                resultSet.getInt(CATEGORY_ID),
+                resultSet.getString(CATEGORY_CATEGORY)
         );
     }
 

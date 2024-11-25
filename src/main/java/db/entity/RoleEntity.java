@@ -1,6 +1,6 @@
 package db.entity;
 
-import db.enam.Roles;
+import db.enums.Roles;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package db.enam;
+package db.enums;
 
 public enum Roles {
 
