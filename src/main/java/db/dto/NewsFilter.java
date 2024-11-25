@@ -7,4 +7,5 @@ public record NewsFilter(int limit,
                          String content,
                          String createdAt,
                          String updateAt) {
+
 }

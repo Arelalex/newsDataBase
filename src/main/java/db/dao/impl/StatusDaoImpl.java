@@ -1,9 +1,9 @@
 package db.dao.impl;
 
-import db.dao.Dao;
+import db.dao.StatusDao;
 import db.dto.StatusFilter;
 import db.entity.StatusEntity;
-import db.exception.DaoException;
+import db.exception.*;
 import db.util.ConnectionManager;
 
 import java.sql.Connection;
@@ -16,7 +16,10 @@ import java.util.Optional;
 
 import static java.util.stream.Collectors.joining;
 
-public class StatusDao implements Dao<Integer, StatusEntity> {
+public class StatusDaoImpl implements StatusDao<Integer, StatusEntity> {
+
+    private static final String STATUS_ID = "id";
+    private static final String STATUS_STATUS = "status";
 
     private static final String DELETE_SQL = """
             DELETE FROM status
@@ -44,17 +47,20 @@ public class StatusDao implements Dao<Integer, StatusEntity> {
             WHERE status.id = ?
             """;
 
-    private static StatusDao INSTANCE = new StatusDao();
-    private final NewsDao newsDao = NewsDao.getInstance();
-    private final PortalUserDao portalUserDao = PortalUserDao.getInstance();
-    private final CategoryDao categoryDao = CategoryDao.getInstance();
+    private static StatusDaoImpl instance;
+    private final NewsDaoImpl newsDaoImpl = NewsDaoImpl.getInstance();
+    private final PortalUserDaoImpl portalUserDaoImpl = PortalUserDaoImpl.getInstance();
+    private final CategoryDaoImpl categoryDao = CategoryDaoImpl.getInstance();
     //   private final StatusDao statusDao = StatusDao.getInstance();
 
-    private StatusDao() {
+    private StatusDaoImpl() {
     }
 
-    public static StatusDao getInstance() {
-        return INSTANCE;
+    public static synchronized StatusDaoImpl getInstance() {
+        if (instance == null) {
+            instance = new StatusDaoImpl();
+        }
+        return instance;
     }
 
     @Override
@@ -65,7 +71,7 @@ public class StatusDao implements Dao<Integer, StatusEntity> {
 
             return preparedStatement.executeUpdate() > 0;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionDelete("Error deleting values from table",throwables);
         }
     }
 
@@ -83,7 +89,7 @@ public class StatusDao implements Dao<Integer, StatusEntity> {
             }
             return statusEntity;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionInsert("Error inserting values into table", throwables);
         }
     }
 
@@ -97,7 +103,7 @@ public class StatusDao implements Dao<Integer, StatusEntity> {
 
             preparedStatement.executeUpdate();
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionUpdate("Error updating values in table", throwables);
         }
     }
 
@@ -106,7 +112,7 @@ public class StatusDao implements Dao<Integer, StatusEntity> {
         try (var connection = ConnectionManager.get()) {
             return findById(id, connection);
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
@@ -121,11 +127,11 @@ public class StatusDao implements Dao<Integer, StatusEntity> {
             }
             return Optional.ofNullable(statusEntity);
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
-    public List<StatusEntity> findAll(StatusFilter filter) {
+    public List<StatusEntity> findAllByFilter(StatusFilter filter) {
         List<Object> parameters = new ArrayList<>();
         List<String> whereSql = new ArrayList<>();
         if (filter.status() != null) {
@@ -152,7 +158,7 @@ public class StatusDao implements Dao<Integer, StatusEntity> {
             }
             return statusEntities;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
@@ -167,14 +173,14 @@ public class StatusDao implements Dao<Integer, StatusEntity> {
             }
             return statusEntities;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
     private StatusEntity buildStatus(ResultSet resultSet) throws SQLException {
         return new StatusEntity(
-                resultSet.getInt("id"),
-                resultSet.getString("status")
+                resultSet.getInt(STATUS_ID),
+                resultSet.getString(STATUS_STATUS)
         );
     }
 }

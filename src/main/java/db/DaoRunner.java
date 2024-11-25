@@ -1,18 +1,18 @@
 package db;
 
-import db.dao.impl.PortalUserDao;
-import db.dao.impl.RoleDao;
+import db.dao.impl.PortalUserDaoImpl;
+import db.dao.impl.RoleDaoImpl;
 import db.dto.PortalUserFilter;
 import db.dto.RoleFilter;
-import db.enam.Roles;
+import db.enums.Roles;
 import db.entity.PortalUserEntity;
 import db.entity.RoleEntity;
 
 public class DaoRunner {
     public static void main(String[] args) {
 
-        var portalUserDao = PortalUserDao.getInstance();
-        var roleDao = RoleDao.getInstance();
+        var portalUserDao = PortalUserDaoImpl.getInstance();
+        var roleDao = RoleDaoImpl.getInstance();
 
         // добавление записей в таблицу Ролей
         roleDao.save(new RoleEntity(Roles.MODERATOR));
@@ -27,7 +27,7 @@ public class DaoRunner {
 
         // поиск с использованием фильтра по названию Роли
         var roleFilter = new RoleFilter(2, 0, "GUEST");
-        System.out.println(roleDao.findAll(roleFilter));
+        System.out.println(roleDao.findAllByFilter(roleFilter));
 
         // обновление записи в таблице Роли
         var maybeRole = roleDao.findById(2);
@@ -78,8 +78,7 @@ public class DaoRunner {
 
         // поиск с использованием фильтра по пользователю
         var userFilter = new PortalUserFilter(2, 0, "Alex", "Brown", "alexbrown", "alexbrown@example.com");
-        System.out.println(portalUserDao.findAll(userFilter));
-
+        System.out.println(portalUserDao.findAllByFilter(userFilter));
     }
 
 }

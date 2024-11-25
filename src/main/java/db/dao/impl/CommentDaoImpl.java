@@ -6,7 +6,7 @@ import db.entity.CommentEntity;
 import db.entity.NewsEntity;
 import db.entity.PortalUserEntity;
 import db.entity.StatusEntity;
-import db.exception.DaoException;
+import db.exception.*;
 import db.util.ConnectionManager;
 
 import java.sql.*;
@@ -16,9 +16,39 @@ import java.util.Optional;
 
 import static java.util.stream.Collectors.joining;
 
-public class CommentDao implements Dao<Long, CommentEntity> {
+public class CommentDaoImpl implements CommentDao<Long, CommentEntity> {
 
-    private static final CommentDao INSTANCE = new CommentDao();
+    private static CommentDaoImpl instance;
+    private static final String NEWS_ID = "id";
+    private static final String NEWS_TITLE = "title";
+    private static final String NEWS_DESCRIPTION = "description";
+    private static final String NEWS_CONTENT = "content";
+    private static final String NEWS_CREATED_AT = "created_at";
+    private static final String NEWS_UPDATED_AT = "updated_at";
+    private static final String NEWS_IMAGE = "image";
+
+    private static final String FOREIGN_USER_ID = "user_id";
+    private static final String FOREIGN_CATEGORY_ID = "category_id";
+    private static final String FOREIGN_STATUS_ID = "status_id";
+    private static final String FOREIGN_NEWS_ID = "news_id";
+
+    private static final String PORTAL_USER_ID = "id";
+    private static final String USER_FIRST_NAME = "first_name";
+    private static final String USER_LAST_NAME = "last_name";
+    private static final String NICKNAME = "nickname";
+    private static final String USER_EMAIL = "email";
+    private static final String USER_PASSWORD = "password";
+    private static final String IMAGE = "image";
+    private static final String FOREIGN_ROLE_ID = "role_id";
+
+    private static final String STATUS_ID = "id";
+    private static final String STATUS_STATUS = "status";
+
+    private static final String COMMENT_ID = "id";
+    private static final String COMMENT_CONTENT = "content";
+    private static final String COMMENT_CREATED_AT = "created_at";
+    private static final String COMMENT_UPDATED_AT = "updated_at";
+    private static final String COMMENT_ATTACHMENT = "attachment";
 
     private static final String DELETE_SQL = """
             DELETE FROM comment
@@ -58,17 +88,20 @@ public class CommentDao implements Dao<Long, CommentEntity> {
             WHERE comment.id = ?
             """;
 
-    private final NewsDao newsDao = NewsDao.getInstance();
-    private final PortalUserDao portalUserDao = PortalUserDao.getInstance();
-    private final CategoryDao categoryDao = CategoryDao.getInstance();
-    private final StatusDao statusDao = StatusDao.getInstance();
-    private final RoleDao roleDao = RoleDao.getInstance();
+    private final NewsDaoImpl newsDaoImpl = NewsDaoImpl.getInstance();
+    private final PortalUserDaoImpl portalUserDaoImpl = PortalUserDaoImpl.getInstance();
+    private final CategoryDaoImpl categoryDao = CategoryDaoImpl.getInstance();
+    private final StatusDaoImpl statusDaoImpl = StatusDaoImpl.getInstance();
+    private final RoleDaoImpl roleDaoImpl = RoleDaoImpl.getInstance();
 
-    private CommentDao() {
+    private CommentDaoImpl() {
     }
 
-    public static CommentDao getInstance() {
-        return INSTANCE;
+    public static synchronized CommentDaoImpl getInstance() {
+        if (instance == null) {
+            instance = new CommentDaoImpl();
+        }
+        return instance;
     }
 
     @Override
@@ -79,7 +112,7 @@ public class CommentDao implements Dao<Long, CommentEntity> {
 
             return preparedStatement.executeUpdate() > 0;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionDelete("Error deleting values from table",throwables);
         }
     }
 
@@ -103,7 +136,7 @@ public class CommentDao implements Dao<Long, CommentEntity> {
             }
             return entity;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionInsert("Error inserting values into table", throwables);
         }
     }
 
@@ -123,7 +156,7 @@ public class CommentDao implements Dao<Long, CommentEntity> {
 
             preparedStatement.executeUpdate();
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionUpdate("Error updating values in table", throwables);
         }
     }
 
@@ -132,7 +165,7 @@ public class CommentDao implements Dao<Long, CommentEntity> {
         try (var connection = ConnectionManager.get()) {
             return findById(id, connection);
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
@@ -147,11 +180,11 @@ public class CommentDao implements Dao<Long, CommentEntity> {
             }
             return Optional.ofNullable(commentEntity);
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindById("Error searching values by ID in table", throwables);
         }
     }
 
-    public List<CommentEntity> findAll(CommentFilter filter) {
+    public List<CommentEntity> findAllByFilter(CommentFilter filter) {
         List<Object> parameters = new ArrayList<>();
         List<String> whereSql = new ArrayList<>();
         if (filter.content() != null) {
@@ -186,7 +219,7 @@ public class CommentDao implements Dao<Long, CommentEntity> {
             }
             return commentEntities;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindAll("Error searching for values in table", throwables);
         }
     }
 
@@ -201,55 +234,55 @@ public class CommentDao implements Dao<Long, CommentEntity> {
             }
             return commentEntities;
         } catch (SQLException throwables) {
-            throw new DaoException(throwables);
+            throw new DaoExceptionFindAll("Error searching for values in table", throwables);
         }
     }
 
     private CommentEntity buildComment(ResultSet resultSet) throws SQLException {
         var newsEntity = new NewsEntity(
-                resultSet.getInt("id"),
-                resultSet.getString("title"),
-                resultSet.getString("description"),
-                resultSet.getString("content"),
-                resultSet.getTimestamp("created_at").toLocalDateTime(),
-                resultSet.getTimestamp("update_at").toLocalDateTime(),
-                resultSet.getString("image"),
-                portalUserDao.findById(resultSet.getInt("user_id"),
+                resultSet.getInt(NEWS_ID),
+                resultSet.getString(NEWS_TITLE),
+                resultSet.getString(NEWS_DESCRIPTION),
+                resultSet.getString(NEWS_CONTENT),
+                resultSet.getTimestamp(NEWS_CREATED_AT).toLocalDateTime(),
+                resultSet.getTimestamp(NEWS_UPDATED_AT).toLocalDateTime(),
+                resultSet.getString(NEWS_IMAGE),
+                portalUserDaoImpl.findById(resultSet.getInt(FOREIGN_USER_ID),
                         resultSet.getStatement().getConnection()).orElse(null),
-                categoryDao.findById(resultSet.getInt("category_id"),
+                categoryDao.findById(resultSet.getInt(FOREIGN_CATEGORY_ID),
                         resultSet.getStatement().getConnection()).orElse(null),
-                statusDao.findById(resultSet.getInt("status_id"),
+                statusDaoImpl.findById(resultSet.getInt(STATUS_ID),
                         resultSet.getStatement().getConnection()).orElse(null)
         );
-        var userEntity = new PortalUserEntity(
-                resultSet.getInt("id"),
-                resultSet.getString("first_name"),
-                resultSet.getString("last_name"),
-                resultSet.getString("nickname"),
-                resultSet.getString("email"),
-                resultSet.getString("password"),
-                resultSet.getString("image"),
-                roleDao.findById(resultSet.getInt("role_id"),
-                        resultSet.getStatement().getConnection()).orElse(null)
 
+        var userEntity = new PortalUserEntity(
+                resultSet.getInt(PORTAL_USER_ID),
+                resultSet.getString(USER_FIRST_NAME),
+                resultSet.getString(USER_LAST_NAME),
+                resultSet.getString(NICKNAME),
+                resultSet.getString(USER_EMAIL),
+                resultSet.getString(USER_PASSWORD),
+                resultSet.getString(IMAGE),
+                roleDaoImpl.findById(resultSet.getInt(FOREIGN_ROLE_ID),
+                        resultSet.getStatement().getConnection()).orElse(null)
         );
 
         var statusEntity = new StatusEntity(
-                resultSet.getInt("id"),
-                resultSet.getString("status")
+                resultSet.getInt(STATUS_ID),
+                resultSet.getString(STATUS_STATUS)
         );
 
         return new CommentEntity(
-                resultSet.getInt("id"),
-                resultSet.getString("connect"),
-                resultSet.getTimestamp("created_at").toLocalDateTime(),
-                resultSet.getTimestamp("updated_at").toLocalDateTime(),
-                resultSet.getString("attachment"),
-                newsDao.findById(resultSet.getInt("news_id"),
+                resultSet.getInt(COMMENT_ID),
+                resultSet.getString(COMMENT_CONTENT),
+                resultSet.getTimestamp(COMMENT_CREATED_AT).toLocalDateTime(),
+                resultSet.getTimestamp(COMMENT_UPDATED_AT).toLocalDateTime(),
+                resultSet.getString(COMMENT_ATTACHMENT),
+                newsDaoImpl.findById(resultSet.getInt(FOREIGN_NEWS_ID),
                         resultSet.getStatement().getConnection()).orElse(null),
-                portalUserDao.findById(resultSet.getInt("user_id"),
+                portalUserDaoImpl.findById(resultSet.getInt(FOREIGN_USER_ID),
                         resultSet.getStatement().getConnection()).orElse(null),
-                statusDao.findById(resultSet.getInt("status_id"),
+                statusDaoImpl.findById(resultSet.getInt(FOREIGN_STATUS_ID),
                         resultSet.getStatement().getConnection()).orElse(null)
         );
     }

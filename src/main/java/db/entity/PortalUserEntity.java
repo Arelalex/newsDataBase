@@ -30,4 +30,5 @@ public class PortalUserEntity {
         this.image = image;
         this.role = role;
     }
+
 }

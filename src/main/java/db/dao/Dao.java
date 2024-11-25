@@ -1,5 +1,10 @@
 package db.dao;
 
+import db.dto.CategoryFilter;
+import db.dto.CommentFilter;
+import db.entity.CategoryEntity;
+import db.entity.CommentEntity;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -14,4 +19,5 @@ public interface Dao<K, E> {
     Optional<E> findById(int id);
 
     List<E> findAll();
+
 }

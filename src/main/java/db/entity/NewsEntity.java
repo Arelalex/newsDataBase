@@ -24,5 +24,4 @@ public class NewsEntity {
     private CategoryEntity category;
     private StatusEntity status;
 
-
 }
